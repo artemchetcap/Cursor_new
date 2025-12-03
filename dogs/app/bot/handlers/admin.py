@@ -26,7 +26,7 @@ class AdminFilter:
     async def __call__(self, message: Message) -> bool:
         if not message.from_user:
             return False
-        return message.from_user.id in settings.ADMIN_IDS
+        return message.from_user.id in settings.admin_ids_list
 
 
 admin_filter = AdminFilter()
@@ -53,7 +53,12 @@ async def _get_stats(since: datetime) -> dict[str, Any]:
     }
 
 
-def _format_stats_message(stats_24h: dict[str, Any], stats_7d: dict[str, Any]) -> str:
+def _format_stats_message(
+    stats_24h: dict[str, Any], 
+    stats_7d: dict[str, Any], 
+    total_users: int, 
+    total_requests: int
+) -> str:
     """
     Format statistics into a readable message.
     """
@@ -75,8 +80,8 @@ def _format_stats_message(stats_24h: dict[str, Any], stats_7d: dict[str, Any]) -
 🔢 Токенов использовано: <code>{stats_7d['total_tokens']:,}</code>
 
 <b>Всего в системе:</b>
-👥 Пользователей: <code>{await User.all().count()}</code>
-📝 Запросов: <code>{await SummaryRequest.all().count()}</code>
+👥 Пользователей: <code>{total_users}</code>
+📝 Запросов: <code>{total_requests}</code>
 """.strip()
 
 

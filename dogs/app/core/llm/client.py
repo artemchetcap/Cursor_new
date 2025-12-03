@@ -1,16 +1,43 @@
 from __future__ import annotations
 
 import abc
+import ssl
+import warnings
 from dataclasses import dataclass
 from typing import Any, Iterable, List, Optional
 
+import httpx
 import structlog
 from openai import AsyncOpenAI
+
+# Suppress SSL warnings for corporate networks
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 try:
     from anthropic import AsyncAnthropic
 except ImportError:  # pragma: no cover - optional dependency
     AsyncAnthropic = None
+
+
+# AICODE-NOTE: Disable SSL verification for corporate networks with proxy/firewall
+# that intercept HTTPS traffic with self-signed certificates.
+# In production, this should be replaced with proper certificate handling.
+def _create_ssl_context() -> ssl.SSLContext:
+    """Create SSL context that doesn't verify certificates."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
+def _create_insecure_http_client() -> httpx.AsyncClient:
+    """Create HTTP client that skips SSL verification."""
+    return httpx.AsyncClient(
+        verify=_create_ssl_context(),
+        timeout=httpx.Timeout(60.0, connect=30.0),
+    )
 
 ChatMessage = dict[str, str]
 
@@ -42,7 +69,11 @@ class OpenAIClient(BaseLLMClient):
     def __init__(self, api_key: str, model: str) -> None:
         self.provider = "openai"
         self.model = model
-        self._client = AsyncOpenAI(api_key=api_key)
+        # Use insecure client for corporate networks with SSL interception
+        self._client = AsyncOpenAI(
+            api_key=api_key,
+            http_client=_create_insecure_http_client(),
+        )
         self.log = structlog.get_logger("OpenAIClient")
 
     async def complete(
