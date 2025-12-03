@@ -45,6 +45,11 @@ graph TD
     *   Primary: `gpt-4o-mini` (Баланс цены/качества для саммари).
     *   Fallback: `claude-3-haiku` (Если нужны большие контекстные окна).
 
+#### ⚙️ Настройки LLM (env)
+*   `LLM_PROVIDER`: `openai` (по умолчанию) или `anthropic`.
+*   `OPENAI_MODEL`, `OPENAI_MAX_OUTPUT_TOKENS`: управление таргет-моделью и длиной ответа.
+*   `ANTHROPIC_MODEL`, `ANTHROPIC_MAX_OUTPUT_TOKENS`, `ANTHROPIC_API_KEY`: включаются при выборе провайдера `anthropic`.
+
 ### 🔹 Database & Storage
 *   **Main DB**: `SQLite` (для MVP) -> `PostgreSQL` (Prod).
 *   **Cache/State**: `Redis` (FSM состояния aiogram, кэширование ответов парсера).
@@ -115,7 +120,64 @@ dogs/
 
 ---
 
-## 6. Development Guidelines
+## 6. Telegram Bot Commands
+
+### User Commands
+| Command | Description |
+|---------|-------------|
+| `/start` | Приветственное сообщение с описанием бота |
+| `/help` | Инструкция по использованию |
+
+### Admin Commands
+| Command | Access | Description |
+|---------|--------|-------------|
+| `/stats` | `ADMIN_IDS` | Статистика за 24ч и 7 дней (пользователи, запросы, токены) |
+
+### Message Handlers
+Бот обрабатывает следующие типы контента:
+*   **YouTube ссылки** → извлечение субтитров + саммари
+*   **Web статьи** → парсинг текста + саммари
+*   **Текст** → прямое саммари
+*   **Forwarded сообщения** → обработка как текст
+
+### User Flow
+1. Пользователь отправляет ссылку/текст
+2. Бот ставит реакцию 👀 (acknowledgment)
+3. Определяется тип контента, запускается парсинг
+4. Контент отправляется в LLM для саммаризации
+5. Результат отправляется пользователю с footer `⚡️ Fast read`
+6. При успехе — реакция ✅
+
+---
+
+## 7. Running the Bot
+
+### Environment Variables
+```bash
+# Telegram
+TG_TOKEN=your_bot_token
+ADMIN_IDS=123456789,987654321
+
+# LLM Provider
+LLM_PROVIDER=openai  # or anthropic
+OPENAI_API_KEY=your_key
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_MAX_OUTPUT_TOKENS=700
+
+# Optional: Anthropic
+ANTHROPIC_API_KEY=optional
+ANTHROPIC_MODEL=claude-3-haiku-20240307
+```
+
+### Start Command
+```bash
+cd dogs
+python main.py
+```
+
+---
+
+## 8. Development Guidelines
 *   **Code Style**: `PEP8` + `Black` formatter.
 *   **Typing**: 100% покрытие тайп-хинтами.
 *   **Commits**: Conventional Commits (`feat: add youtube parser`).
