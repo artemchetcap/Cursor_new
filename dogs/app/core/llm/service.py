@@ -86,6 +86,7 @@ def build_llm_service(active_settings: Optional[Settings] = None) -> LLMService:
         client = AnthropicClient(
             api_key=cfg.ANTHROPIC_API_KEY.get_secret_value(),
             model=cfg.ANTHROPIC_MODEL,
+            base_url=cfg.ANTHROPIC_BASE_URL,
         )
         max_tokens = cfg.ANTHROPIC_MAX_OUTPUT_TOKENS
     else:

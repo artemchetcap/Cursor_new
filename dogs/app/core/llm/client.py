@@ -4,7 +4,7 @@ import abc
 import ssl
 import warnings
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, Optional
 
 import httpx
 import structlog
@@ -15,10 +15,8 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
-try:
-    from anthropic import AsyncAnthropic
-except ImportError:  # pragma: no cover - optional dependency
-    AsyncAnthropic = None
+# AICODE-NOTE: Больше не используем нативный anthropic SDK,
+# работаем через OpenAI-совместимый API с кастомным base_url
 
 
 # AICODE-NOTE: Disable SSL verification for corporate networks with proxy/firewall
@@ -104,12 +102,24 @@ class OpenAIClient(BaseLLMClient):
 
 
 class AnthropicClient(BaseLLMClient):
-    def __init__(self, api_key: str, model: str) -> None:
-        if AsyncAnthropic is None:
-            raise ImportError("anthropic package is not installed")
+    """
+    Клиент для Anthropic через OpenAI-совместимый API.
+    
+    AICODE-NOTE: Прямой Anthropic API блокируется (403 Forbidden),
+    поэтому используем OpenAI Python SDK с кастомным base_url
+    для доступа к Anthropic-совместимому эндпоинту.
+    """
+    
+    def __init__(self, api_key: str, model: str, base_url: str) -> None:
         self.provider = "anthropic"
         self.model = model
-        self._client = AsyncAnthropic(api_key=api_key)
+        # AICODE-NOTE: Используем AsyncOpenAI с кастомным base_url
+        # для работы с Anthropic через OpenAI-совместимый прокси
+        self._client = AsyncOpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            http_client=_create_insecure_http_client(),
+        )
         self.log = structlog.get_logger("AnthropicClient")
 
     async def complete(
@@ -119,47 +129,24 @@ class AnthropicClient(BaseLLMClient):
         temperature: float = 0.3,
         max_output_tokens: Optional[int] = None,
     ) -> LLMResponse:
+        # OpenAI-совместимый API использует стандартный формат messages
         prepared = list(messages)
-        system_prompt = self._pluck_system_prompt(prepared)
-        anthropic_messages = self._map_messages(prepared)
-        response = await self._client.messages.create(
-            system=system_prompt,
+        response = await self._client.chat.completions.create(
             model=self.model,
-            messages=anthropic_messages,
+            messages=prepared,
             temperature=temperature,
-            max_output_tokens=max_output_tokens or 1024,
+            max_tokens=max_output_tokens,
         )
-        text = self._merge_response_text(response.content)
+        message = response.choices[0].message
+        text = message.content or ""
         usage = getattr(response, "usage", None)
-        prompt_tokens = getattr(usage, "input_tokens", None) if usage else None
-        completion_tokens = getattr(usage, "output_tokens", None) if usage else None
+        prompt_tokens = getattr(usage, "prompt_tokens", None) if usage else None
+        completion_tokens = getattr(usage, "completion_tokens", None) if usage else None
         return LLMResponse(
             text=text,
             raw=response,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
         )
-
-    def _pluck_system_prompt(self, messages: List[ChatMessage]) -> str:
-        for message in messages:
-            if message.get("role") == "system":
-                return message.get("content", "")
-        return ""
-
-    def _map_messages(self, messages: List[ChatMessage]) -> List[dict]:
-        mapped: List[dict] = []
-        for message in messages:
-            role = message.get("role")
-            if role == "system":
-                continue
-            mapped.append({"role": role or "user", "content": message.get("content", "")})
-        return mapped
-
-    def _merge_response_text(self, blocks: Any) -> str:
-        parts: List[str] = []
-        for block in blocks:
-            if getattr(block, "type", None) == "text":
-                parts.append(block.text)
-        return "\n".join(parts).strip()
 
 
