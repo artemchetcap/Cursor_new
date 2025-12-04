@@ -8,7 +8,7 @@ from typing import Any, Iterable, Optional
 
 import httpx
 import structlog
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 
 # Suppress SSL warnings for corporate networks
 import urllib3
@@ -30,10 +30,12 @@ def _create_ssl_context() -> ssl.SSLContext:
     return ctx
 
 
-def _create_insecure_http_client() -> httpx.AsyncClient:
+def _create_insecure_http_client() -> DefaultAsyncHttpxClient:
     """Create HTTP client that skips SSL verification."""
-    return httpx.AsyncClient(
-        verify=_create_ssl_context(),
+    # AICODE-NOTE: Используем DefaultAsyncHttpxClient из OpenAI SDK
+    # чтобы корректно передавались заголовки авторизации
+    return DefaultAsyncHttpxClient(
+        verify=False,
         timeout=httpx.Timeout(60.0, connect=30.0),
     )
 
@@ -114,10 +116,18 @@ class AnthropicClient(BaseLLMClient):
         self.provider = "anthropic"
         self.model = model
         # AICODE-NOTE: Используем AsyncOpenAI с кастомным base_url
-        # для работы с Anthropic через OpenAI-совместимый прокси
+        # для работы с Anthropic через OpenRouter.
+        # Корпоративный прокси перехватывает SSL, поэтому:
+        # 1. Отключаем SSL проверку через http_client
+        # 2. Явно добавляем Authorization в заголовки (иначе не передаётся)
         self._client = AsyncOpenAI(
             api_key=api_key,
             base_url=base_url,
+            default_headers={
+                "Authorization": f"Bearer {api_key}",
+                "HTTP-Referer": "https://t.me/GistBot_bot",
+                "X-Title": "GistBot",
+            },
             http_client=_create_insecure_http_client(),
         )
         self.log = structlog.get_logger("AnthropicClient")
