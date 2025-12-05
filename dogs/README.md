@@ -36,6 +36,7 @@ python main.py
 
 - [Product Spec](docs/Product.md) — product vision and user flows
 - [Tech Spec](docs/Tech.md) — architecture and technical details
+- [Deploy Guide](docs/deploy-oracle-cloud.md) — деплой на Oracle Cloud (бесплатно)
 
 ## Commands
 

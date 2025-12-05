@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[SecretStr] = None
     ADMIN_IDS: str = ""  # Будет распаршено в список
     LLM_PROVIDER: Literal["openai", "anthropic"] = "openai"
+    # AICODE-NOTE: DATABASE_URL для Docker volume persistence
+    DATABASE_URL: str = "sqlite://db.sqlite3"
     OPENAI_MODEL: str = "gpt-4o-mini"
     OPENAI_MAX_OUTPUT_TOKENS: int = 700
     ANTHROPIC_API_KEY: Optional[SecretStr] = None

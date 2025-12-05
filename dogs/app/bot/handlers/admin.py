@@ -2,13 +2,15 @@
 Admin handlers (restricted to ADMIN_IDS).
 """
 
+import csv
+import io
 from datetime import datetime, timedelta
 from typing import Any
 
 import structlog
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import BufferedInputFile, Message
 from tortoise.functions import Count, Sum
 
 from app.core.config import settings
@@ -128,3 +130,62 @@ async def cmd_stats(message: Message) -> None:
 
     await message.answer(response.strip())
 
+
+@router.message(Command("export"), admin_filter)
+async def cmd_export(message: Message) -> None:
+    """
+    Handle /export command for admins only.
+    Generates and sends CSV file with SummaryRequest data.
+    """
+    log.info("Admin export requested", admin_id=message.from_user.id)
+
+    # Fetch all requests with user data
+    requests = await SummaryRequest.all().prefetch_related("user").order_by("-created_at")
+
+    if not requests:
+        await message.answer("📭 Нет данных для экспорта.")
+        return
+
+    # Generate CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header
+    writer.writerow([
+        "id",
+        "user_telegram_id",
+        "user_username",
+        "content_type",
+        "source_url",
+        "status",
+        "tokens_used",
+        "error_message",
+        "created_at",
+    ])
+
+    # Data rows
+    for req in requests:
+        writer.writerow([
+            req.id,
+            req.user.telegram_id,
+            req.user.username or "",
+            req.content_type,
+            req.source_url or "",
+            req.status,
+            req.tokens_used,
+            req.error_message or "",
+            req.created_at.isoformat(),
+        ])
+
+    # Prepare file
+    csv_bytes = output.getvalue().encode("utf-8-sig")  # BOM for Excel compatibility
+    filename = f"summary_requests_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    file = BufferedInputFile(csv_bytes, filename=filename)
+
+    await message.answer_document(
+        file,
+        caption=f"📊 Экспорт данных: {len(requests)} записей",
+    )
+
+    log.info("Export sent", admin_id=message.from_user.id, records=len(requests))

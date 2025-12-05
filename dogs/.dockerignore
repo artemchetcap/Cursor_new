@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+
+# Documentation & Plans (not needed in container)
+docs/
+plans/
+*.md
+!README.md
+
+# Local database files
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+db.sqlite3*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+tests/
+test_*.py
+*_test.py
+pytest.ini
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+
+# PowerShell scripts (Windows only)
+*.ps1
+

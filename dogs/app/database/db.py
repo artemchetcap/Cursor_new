@@ -1,7 +1,13 @@
+import os
+
 from tortoise import Tortoise
 
+# AICODE-NOTE: Используем переменную окружения для Docker-совместимости.
+# В контейнере путь будет sqlite://./db/db.sqlite3 для persistence.
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite://db.sqlite3")
+
 TORTOISE_ORM = {
-    "connections": {"default": "sqlite://db.sqlite3"},
+    "connections": {"default": DATABASE_URL},
     "apps": {
         "models": {
             "models": ["app.database.models", "aerich.models"],

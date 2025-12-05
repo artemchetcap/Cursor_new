@@ -1,0 +1,44 @@
+# Smart Summarizer Bot — Docker Compose
+# AICODE-NOTE: Для продакшена добавить PostgreSQL вместо SQLite
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: summarizer-bot
+    restart: unless-stopped
+    
+    # Environment variables
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL for container volume persistence
+      - DATABASE_URL=sqlite://./db/db.sqlite3
+    
+    # Persist SQLite database
+    # AICODE-TODO: В продакшене заменить на volume для PostgreSQL
+    volumes:
+      - bot-db:/app/db
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+volumes:
+  bot-db:
+    name: summarizer-bot-db
+
