@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # прямой API блокируется (403 Forbidden)
     ANTHROPIC_BASE_URL: str = "https://api.anthropic.com/v1"
 
+    # Rate Limiting
+    RATE_LIMIT_REQUESTS: int = 5  # Максимум запросов за период
+    RATE_LIMIT_PERIOD: int = 60  # Период в секундах
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )

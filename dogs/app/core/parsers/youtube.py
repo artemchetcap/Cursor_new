@@ -18,6 +18,10 @@ _TIMESTAMP_PATTERN = re.compile(r"\d{2}:\d{2}:\d{2}\.\d{3}")
 class YouTubeParser(BaseParser):
     """
     Parser that fetches subtitles with yt-dlp and converts them into text.
+
+    AICODE-NOTE: YouTube парсинг временно не работает из-за ограничений yt-dlp/YouTube.
+    Бот будет возвращать ошибку при попытке обработать YouTube ссылки.
+    Статус: ожидаем обновление yt-dlp или альтернативное решение.
     """
 
     def __init__(

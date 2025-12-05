@@ -35,8 +35,12 @@ def setup_middlewares() -> None:
     """
     Register all middlewares to the dispatcher.
     """
+    from app.bot.middlewares.throttling import ThrottlingMiddleware
     from app.bot.middlewares.user_sync import UserSyncMiddleware
 
+    # Throttling первым — отсекает спам до обработки
+    dp.message.middleware(ThrottlingMiddleware())
+    # User sync — создаёт/обновляет пользователя в БД
     dp.message.middleware(UserSyncMiddleware())
     dp.callback_query.middleware(UserSyncMiddleware())
 

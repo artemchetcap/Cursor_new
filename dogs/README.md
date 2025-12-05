@@ -27,7 +27,7 @@ python main.py
 
 ## Features
 
-- 🎬 **YouTube** — extract subtitles and summarize videos
+- 🎬 **YouTube** — extract subtitles and summarize videos ⚠️ *временно не работает (ограничения yt-dlp)*
 - 📰 **Web Articles** — parse and summarize any article
 - 📝 **Text** — direct text summarization
 - 📊 **Admin Stats** — usage analytics for admins

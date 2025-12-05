@@ -45,7 +45,7 @@ dogs/
 
 ## Risks (Mitigated)
 1. ✅ **Долгие ответы LLM** → статус `processing` + typing action.
-2. ⚠️ **Rate Limits** → throttling не реализован, добавить при необходимости.
+2. ✅ **Rate Limits** → `ThrottlingMiddleware` (5 запросов/60 сек, админы исключены).
 3. ✅ **Ошибки парсинга** → дружелюбные fallback сообщения.
 4. ✅ **Утечки токенов** → используется structlog без sensitive data.
 
